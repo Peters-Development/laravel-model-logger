@@ -35,12 +35,34 @@ $order->logs; // Collection of ModelLog
 
 The authenticated user is automatically recorded. Meta data is stored as JSON.
 
+The `log()` method returns the created `ModelLog` instance:
+
+```php
+$log = $order->log('Status changed', ['from' => 'pending', 'to' => 'shipped']);
+```
+
+## Querying Logs
+
+Access the user that performed the action:
+
+```php
+$log->user; // Returns the User model
+```
+
+Filter logs by user:
+
+```php
+use PetersDevelopment\ModelLogger\ModelLog;
+
+$logs = ModelLog::forUser($userId)->get();
+```
+
 ## Configuration
 
 Publish the config to customize the table name:
 
 ```bash
-php artisan vendor:publish --tag=model-logger
+php artisan vendor:publish --tag=model-logger-config
 ```
 
 ```php

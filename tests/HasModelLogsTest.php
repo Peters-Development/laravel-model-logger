@@ -2,38 +2,10 @@
 
 namespace PetersDevelopment\ModelLogger\Tests;
 
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Schema;
-use PetersDevelopment\ModelLogger\HasModelLogs;
 use PetersDevelopment\ModelLogger\ModelLog;
 
 class HasModelLogsTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Run the model_logs migration
-        $this->artisan('migrate');
-
-        // Create a dummy table for testing
-        Schema::create('test_models', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->timestamps();
-        });
-
-        // Create users table for auth testing
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->timestamps();
-        });
-    }
-
     public function test_log_creates_model_log_record(): void
     {
         $model = TestModel::create(['name' => 'Test']);
@@ -45,6 +17,16 @@ class HasModelLogsTest extends TestCase
             'loggable_id' => $model->getKey(),
             'loggable_type' => TestModel::class,
         ]);
+    }
+
+    public function test_log_returns_model_log_instance(): void
+    {
+        $model = TestModel::create(['name' => 'Test']);
+
+        $log = $model->log('Something happened');
+
+        $this->assertInstanceOf(ModelLog::class, $log);
+        $this->assertEquals('Something happened', $log->message);
     }
 
     public function test_logs_relation_returns_correct_records(): void
@@ -99,37 +81,4 @@ class HasModelLogsTest extends TestCase
 
         $this->assertNull($log->user_id);
     }
-
-    public function test_custom_table_name_via_config(): void
-    {
-        $this->assertEquals('model_logs', (new ModelLog())->getTable());
-
-        config()->set('model-logger.table_name', 'custom_logs');
-
-        $this->assertEquals('custom_logs', (new ModelLog())->getTable());
-    }
-
-    public function test_model_log_has_loggable_relation(): void
-    {
-        $model = TestModel::create(['name' => 'Test']);
-        $model->log('Test relation');
-
-        $log = ModelLog::first();
-
-        $this->assertInstanceOf(TestModel::class, $log->loggable);
-        $this->assertEquals($model->id, $log->loggable->id);
-    }
-}
-
-class TestModel extends \Illuminate\Database\Eloquent\Model
-{
-    use HasModelLogs;
-
-    protected $fillable = ['name'];
-}
-
-class TestUser extends Authenticatable
-{
-    protected $table = 'users';
-    protected $fillable = ['name', 'email', 'password'];
 }

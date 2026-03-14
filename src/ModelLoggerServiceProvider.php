@@ -16,7 +16,7 @@ class ModelLoggerServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../config/model-logger.php' => config_path('model-logger.php'),
-            ], 'model-logger');
+            ], 'model-logger-config');
 
             $this->publishes([
                 __DIR__ . '/../database/migrations' => database_path('migrations'),

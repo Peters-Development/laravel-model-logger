@@ -15,11 +15,11 @@ return new class extends Migration
     {
         Schema::create($this->tableName(), function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable()->index();
             $table->text('message');
-            $table->nullableMorphs('loggable');
+            $table->uuidMorphs('loggable');
             $table->json('meta')->nullable();
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable();
         });
     }
 

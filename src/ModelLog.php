@@ -2,12 +2,14 @@
 
 namespace PetersDevelopment\ModelLogger;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ModelLog extends Model
 {
-    use HasModelLogs;
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'user_id',
@@ -18,10 +20,6 @@ class ModelLog extends Model
     ];
 
     protected $casts = [
-        'user_id' => 'integer',
-        'message' => 'string',
-        'loggable_type' => 'string',
-        'loggable_id' => 'string',
         'meta' => 'array',
     ];
 
@@ -31,10 +29,26 @@ class ModelLog extends Model
     }
 
     /**
-     * Object ModelLog belongs to
+     * User that performed the action.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(config('auth.providers.users.model', 'App\\Models\\User'));
+    }
+
+    /**
+     * Object ModelLog belongs to.
      */
     public function loggable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Scope logs by user.
+     */
+    public function scopeForUser(Builder $query, int|string $userId): Builder
+    {
+        return $query->where('user_id', $userId);
     }
 }

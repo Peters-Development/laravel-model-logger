@@ -3,18 +3,17 @@
 namespace PetersDevelopment\ModelLogger;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Str;
 
 trait HasModelLogs
 {
     /**
-     * Log action on model
+     * Log action on model.
      */
-    public function log(string $message, array $meta = []): void
+    public function log(string $message, array $meta = []): ModelLog
     {
-        ModelLog::create([
+        return ModelLog::create([
             'user_id'       => auth()->id(),
-            'message'       => Str::limit($message, 65000),
+            'message'       => $message,
             'loggable_id'   => $this->getKey(),
             'loggable_type' => $this->getMorphClass(),
             'meta'          => $meta,
