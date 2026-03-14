@@ -1,0 +1,40 @@
+{
+    "name": "peters-development/laravel-model-logger",
+    "description": "Lightweight polymorphic model activity logging for Laravel.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Peters Development",
+            "email": "info@petersdevelopment.nl"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "illuminate/database": "^10.0|^11.0|^12.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0|^11.0",
+        "orchestra/testbench": "^8.0|^9.0|^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PetersDevelopment\\ModelLogger\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PetersDevelopment\\ModelLogger\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "PetersDevelopment\\ModelLogger\\ModelLoggerServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
