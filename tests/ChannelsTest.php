@@ -129,6 +129,19 @@ class ChannelsTest extends TestCase
         $this->assertTrue(Schema::hasColumn('ulid_logs', 'loggable_id'));
     }
 
+    public function test_channel_can_be_inherited_from_a_parent_class(): void
+    {
+        $model = InheritsChannelModel::create(['name' => 'F']);
+        $model->log('inherited override');
+
+        // The override lives on the parent class. The trait must discover
+        // it via method_exists() — if the trait declared
+        // getModelLogChannel() itself, PHP's "trait beats inherited" rule
+        // would silently route this to the default channel instead.
+        $this->assertDatabaseHas('shadow_logs', ['message' => 'inherited override']);
+        $this->assertDatabaseMissing('model_logs', ['message' => 'inherited override']);
+    }
+
     public function test_blueprint_helper_rejects_unknown_morph_key_type(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -165,4 +178,27 @@ class AuditChannelModel extends Model
     {
         return 'audit';
     }
+}
+
+/**
+ * Demonstrates the LarsaSub / PDEV2 pattern: a base class declares
+ * getModelLogChannel(), child classes use the HasModelLogs trait, and the
+ * trait honours the inherited override. This is the case that breaks if the
+ * trait declares getModelLogChannel() itself (PHP trait > inherited method).
+ */
+abstract class ChannelByInheritanceBase extends Model
+{
+    protected $table = 'test_models';
+
+    protected $fillable = ['name'];
+
+    public function getModelLogChannel(): string
+    {
+        return 'shadow';
+    }
+}
+
+class InheritsChannelModel extends ChannelByInheritanceBase
+{
+    use HasModelLogs;
 }

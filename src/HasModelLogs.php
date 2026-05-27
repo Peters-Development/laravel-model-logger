@@ -7,25 +7,45 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 /**
  * Trait that adds polymorphic activity logging to an Eloquent model.
  *
- * Default behaviour writes to the package's configured default channel
- * (a single `model_logs` table on the default connection — zero config
- * needed for simple apps).
+ * Default behaviour writes to the package's configured default channel —
+ * a single `model_logs` table on the default connection. Zero config
+ * needed for simple apps.
  *
- * Apps with multiple log destinations override getModelLogChannel() per
- * model to route logs to a specific channel:
+ * Apps with multiple log destinations route a model's logs by defining
+ * a `getModelLogChannel()` method on the model itself OR on a parent
+ * class. Because PHP trait methods override inherited methods from parent
+ * classes, the trait deliberately does NOT declare getModelLogChannel() —
+ * it discovers an override via method_exists() so an inheritance chain
+ * (e.g. a package's BaseModel providing the channel for all subclasses)
+ * works as expected.
  *
  *     class User extends Authenticatable {
  *         use HasModelLogs;
  *         public function getModelLogChannel(): string { return 'auth'; }
  *     }
+ *
+ *     // Or via a shared parent class:
+ *     abstract class LarsaSubBase extends Model {
+ *         public function getModelLogChannel(): string { return 'larsasub'; }
+ *     }
+ *     class Invoice extends LarsaSubBase {
+ *         use HasModelLogs;  // inherits the 'larsasub' channel
+ *     }
  */
 trait HasModelLogs
 {
     /**
-     * Override in your model to route its logs to a non-default channel.
+     * Resolve the channel this model writes logs to. Discovers an override
+     * (own or inherited) via method_exists, falling back to the package
+     * default. Kept private to the trait so subclasses don't accidentally
+     * shadow it — they override via getModelLogChannel() instead.
      */
-    public function getModelLogChannel(): string
+    private function resolveModelLogChannel(): string
     {
+        if (method_exists($this, 'getModelLogChannel')) {
+            return $this->getModelLogChannel();
+        }
+
         return config('model-logger.default', 'default');
     }
 
@@ -34,7 +54,7 @@ trait HasModelLogs
      */
     public function log(string $message, array $meta = []): ModelLog
     {
-        $log = ModelLog::onChannel($this->getModelLogChannel());
+        $log = ModelLog::onChannel($this->resolveModelLogChannel());
 
         $log->fill([
             'user_id' => auth()->id(),
@@ -55,7 +75,7 @@ trait HasModelLogs
      */
     public function logs(): MorphMany
     {
-        $instance = ModelLog::onChannel($this->getModelLogChannel());
+        $instance = ModelLog::onChannel($this->resolveModelLogChannel());
         [$type, $id] = $this->getMorphs('loggable', null, null);
         $table = $instance->getTable();
 
