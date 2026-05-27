@@ -7,13 +7,31 @@ use PetersDevelopment\ModelLogger\ModelLog;
 
 class ModelLogTest extends TestCase
 {
-    public function test_custom_table_name_via_config(): void
+    public function test_default_channel_table_is_model_logs(): void
     {
-        $this->assertEquals('model_logs', (new ModelLog())->getTable());
+        $this->assertSame('model_logs', (new ModelLog)->getTable());
+    }
 
-        config()->set('model-logger.table_name', 'custom_logs');
+    public function test_on_channel_binds_instance_to_channel_table(): void
+    {
+        config()->set('model-logger.channels.custom', [
+            'table' => 'custom_logs',
+            'connection' => null,
+            'morph_key_type' => 'numeric',
+            'user_model' => null,
+        ]);
 
-        $this->assertEquals('custom_logs', (new ModelLog())->getTable());
+        $log = ModelLog::onChannel('custom');
+
+        $this->assertSame('custom_logs', $log->getTable());
+        $this->assertSame('custom', $log->getChannelName());
+    }
+
+    public function test_on_channel_falls_back_to_default_when_channel_unknown(): void
+    {
+        $log = ModelLog::onChannel('does-not-exist');
+
+        $this->assertSame('model_logs', $log->getTable());
     }
 
     public function test_loggable_relation(): void
