@@ -31,6 +31,17 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  *     class Invoice extends LarsaSubBase {
  *         use HasModelLogs;  // inherits the 'larsasub' channel
  *     }
+ *
+ * The user recorded on each entry is discovered the same way: a
+ * `getModelLogUserId()` method on the model or a parent class decides it,
+ * otherwise it is the default guard's `auth()->id()`. An app whose actions
+ * happen behind a non-default guard points it there:
+ *
+ *     abstract class LarsaSubBase extends Model {
+ *         public function getModelLogUserId(): int|string|null {
+ *             return auth('billing')->id() ?? auth()->id();
+ *         }
+ *     }
  */
 trait HasModelLogs
 {
@@ -50,6 +61,21 @@ trait HasModelLogs
     }
 
     /**
+     * Resolve the user id recorded on a new entry. Discovers an override
+     * (own or inherited) via method_exists, for the same reason as the
+     * channel: a trait-declared method would shadow one on a parent class.
+     * Without one it is the default guard's user, as it always was.
+     */
+    private function resolveModelLogUserId(): int|string|null
+    {
+        if (method_exists($this, 'getModelLogUserId')) {
+            return $this->getModelLogUserId();
+        }
+
+        return auth()->id();
+    }
+
+    /**
      * Write a log entry for this model on its configured channel.
      */
     public function log(string $message, array $meta = []): ModelLog
@@ -57,7 +83,7 @@ trait HasModelLogs
         $log = ModelLog::onChannel($this->resolveModelLogChannel());
 
         $log->fill([
-            'user_id' => auth()->id(),
+            'user_id' => $this->resolveModelLogUserId(),
             'message' => $message,
             'loggable_id' => $this->getKey(),
             'loggable_type' => $this->getMorphClass(),
