@@ -39,6 +39,22 @@ $log = $order->log('Status changed', ['from' => 'pending', 'to' => 'shipped']);
 
 The authenticated user is automatically recorded. Meta is stored as JSON.
 
+### Recording a user from another guard
+
+By default the recorded user is `auth()->id()`, the default guard's. When a model's actions happen behind another guard, define `getModelLogUserId()` on the model or on a parent class; its answer is recorded instead, including `null`:
+
+```php
+abstract class BillingModel extends Model
+{
+    public function getModelLogUserId(): int|string|null
+    {
+        return auth('billing')->id() ?? auth()->id();
+    }
+}
+```
+
+Like `getModelLogChannel()`, it is discovered with `method_exists()`, so an override on a parent class works (the trait does not declare the method, which would shadow it).
+
 ### Querying
 
 ```php
